@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarkDown Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --bg2: #16161d;
+    --bg3: #1e1e28;
+    --bg4: #252532;
+    --border: #2e2e3e;
+    --text: #e8e6f0;
+    --text2: #9994b0;
+    --text3: #5e5a72;
+    --accent: #7c6af7;
+    --accent2: #a855f7;
+    --accent-glow: rgba(124,106,247,0.18);
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --toolbar-h: 52px;
+    --statusbar-h: 28px;
+    --radius: 6px;
+    --font-ui: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-prose: 'Lora', serif;
+  }
+  .light {
+    --bg: #f4f2fb;
+    --bg2: #edeaf7;
+    --bg3: #e4e0f5;
+    --bg4: #d8d3ef;
+    --border: #c8c2e4;
+    --text: #1a1828;
+    --text2: #4a4468;
+    --text3: #8e88aa;
+    --accent: #5b47e0;
+    --accent2: #8b3cf7;
+    --accent-glow: rgba(91,71,224,0.12);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #header {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 44px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 12px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  #logo {
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 16px;
+    white-space: nowrap;
+  }
+  #logo span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .header-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 8px;
+  }
+  #filename-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    color: var(--text2);
+    font-size: 12px;
+    font-family: var(--font-mono);
+  }
+  #filename { color: var(--text); }
+  #modified-dot {
+    color: var(--accent);
+    font-size: 18px;
+    line-height: 1;
+    display: none;
+  }
+  .hbtn {
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .hbtn:hover { background: var(--bg4); color: var(--text); border-color: var(--accent); }
+  .hbtn.active { background: var(--accent-glow); color: var(--accent); border-color: var(--accent); }
+  .hbtn svg { width: 14px; height: 14px; }
+
+  #toolbar {
+    height: var(--toolbar-h);
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 1px;
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #toolbar::-webkit-scrollbar { display: none; }
+  .tb-sep {
+    width: 1px;
+    height: 22px;
+    background: var(--border);
+    margin: 0 5px;
+    flex-shrink: 0;
+  }
+  .tb-btn {
+    height: 32px;
+    min-width: 32px;
+    padding: 0 7px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    transition: all 0.12s;
+    flex-shrink: 0;
+    white-space: nowrap;
+    position: relative;
+  }
+  .tb-btn:hover { background: var(--bg4); color: var(--text); border-color: var(--border); }
+  .tb-btn:active { transform: scale(0.95); }
+  .tb-btn svg { width: 15px; height: 15px; }
+
+  #main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #editor-pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 100px;
+    position: relative;
+  }
+  #editor-pane-label, #preview-pane-label {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 6px;
+  }
+  #editor-pane-label::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+  #preview-pane-label::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+  #editor {
+    flex: 1;
+    background: var(--bg2);
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.75;
+    padding: 20px 22px;
+    tab-size: 2;
+    caret-color: var(--accent);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  #editor::-webkit-scrollbar { width: 6px; }
+  #editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  #editor::selection { background: var(--accent-glow); }
+
+  #divider {
+    width: 5px;
+    background: var(--border);
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    position: relative;
+  }
+  #divider:hover, #divider.dragging { background: var(--accent); }
+  #divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    background: currentColor;
+    opacity: 0.3;
+    border-radius: 2px;
+  }
+
+  #preview-pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 100px;
+    flex: 1;
+  }
+  #preview {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px;
+    background: var(--bg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    color: var(--text);
+    font-family: var(--font-prose);
+    font-size: 15px;
+    line-height: 1.85;
+  }
+  #preview::-webkit-scrollbar { width: 6px; }
+  #preview::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  #preview h1,#preview h2,#preview h3,#preview h4,#preview h5,#preview h6 {
+    font-family: var(--font-ui);
+    color: var(--text);
+    margin: 1.4em 0 0.5em;
+    line-height: 1.25;
+    font-weight: 700;
+  }
+  #preview h1 { font-size: 2em; font-weight: 800; border-bottom: 2px solid var(--border); padding-bottom: 0.25em; }
+  #preview h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.2em; }
+  #preview h3 { font-size: 1.2em; color: var(--accent); }
+  #preview p { margin: 0.75em 0; }
+  #preview a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  #preview a:hover { color: var(--accent2); }
+  #preview strong { font-weight: 700; color: var(--text); }
+  #preview em { font-style: italic; color: var(--text2); }
+  #preview del { color: var(--text3); text-decoration: line-through; }
+  #preview code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent2);
+  }
+  #preview pre {
+    --pre-bg: #11111a;
+    background: var(--pre-bg) !important;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 1em 0;
+    position: relative;
+  }
+  .light #preview pre { --pre-bg: #f0f0f5; }
+  #preview pre code {
+    background: none !important;
+    border: none;
+    padding: 0;
+    font-size: 13px;
+    border-radius: 0;
+  }
+  #preview blockquote {
+    border-left: 3px solid var(--accent);
+    margin: 1em 0;
+    padding: 8px 16px;
+    background: var(--accent-glow);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    color: var(--text2);
+    font-style: italic;
+  }
+  #preview ul, #preview ol {
+    margin: 0.6em 0;
+    padding-left: 1.8em;
+  }
+  #preview li { margin: 0.25em 0; }
+  #preview li input[type=checkbox] {
+    accent-color: var(--accent);
+    margin-right: 6px;
+    transform: scale(1.1);
+  }
+  #preview hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 2em 0;
+  }
+  #preview table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    font-family: var(--font-ui);
+    font-size: 13px;
+  }
+  #preview th {
+    background: var(--bg3);
+    color: var(--text);
+    font-weight: 700;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--accent);
+    border-right: 1px solid var(--border);
+  }
+  #preview td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    color: var(--text2);
+  }
+  #preview tr:hover td { background: var(--bg3); color: var(--text); }
+  #preview img { max-width: 100%; border-radius: var(--radius); border: 1px solid var(--border); }
+
+  #statusbar {
+    height: var(--statusbar-h);
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text3);
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+  }
+  #statusbar span { display: flex; align-items: center; gap: 4px; }
+  #statusbar b { color: var(--text2); font-weight: 600; }
+  .status-accent { color: var(--accent) !important; }
+
+  body.fullscreen #header,
+  body.fullscreen #toolbar,
+  body.fullscreen #statusbar { display: none; }
+  body.fullscreen #main { position: fixed; inset: 0; }
+
+  body.only-editor #divider,
+  body.only-editor #preview-pane { display: none; }
+  body.only-editor #editor-pane { width: 100% !important; }
+  body.only-preview #divider,
+  body.only-preview #editor-pane { display: none; }
+  body.only-preview #preview-pane { width: 100% !important; }
+
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    min-width: 320px;
+    max-width: 420px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+  #modal h3 { font-family: var(--font-ui); font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  #modal input, #modal textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+    margin-bottom: 10px;
+  }
+  #modal input:focus, #modal textarea:focus { border-color: var(--accent); }
+  #modal label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 4px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .modal-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .modal-btn {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .modal-btn:hover { background: var(--bg4); color: var(--text); }
+  .modal-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .modal-btn.primary:hover { filter: brightness(1.15); }
+
+  #toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--bg3);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.25s;
+    z-index: 2000;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  #modal.help-modal { min-width: 560px; max-width: 640px; max-height: 82vh; display: flex; flex-direction: column; }
+  #modal.help-modal #modal-body { overflow-y: auto; flex: 1; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  #modal.help-modal #modal-body::-webkit-scrollbar { width: 5px; }
+  #modal.help-modal #modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .help-section { margin-bottom: 20px; }
+  .help-section h4 {
+    font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 8px; padding-bottom: 5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+  .help-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 12px; }
+  .help-row .hkey {
+    display: flex; gap: 3px; flex-shrink: 0;
+  }
+  kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--bg4); border: 1px solid var(--border);
+    border-bottom: 2px solid var(--text3);
+    border-radius: 4px; padding: 1px 6px; font-family: var(--font-mono);
+    font-size: 10px; font-weight: 600; color: var(--text2);
+    min-width: 22px; white-space: nowrap;
+  }
+  .help-row .hdesc { color: var(--text2); flex: 1; }
+  .help-about {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--accent-glow); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 18px;
+  }
+  .help-about-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .help-about-icon svg { width: 20px; height: 20px; color: #fff; }
+  .help-about-text { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .help-about-text strong { color: var(--text); font-weight: 700; display: block; margin-bottom: 2px; font-size: 13px; }
+  .help-tag {
+    display: inline-block; background: var(--bg4); border: 1px solid var(--border);
+    border-radius: 3px; padding: 1px 6px; font-size: 10px; font-family: var(--font-mono);
+    color: var(--text3); margin: 2px 2px 0 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="logo">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 12l3 3 7-7" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="7" y1="8" x2="17" y2="15" gradientUnits="userSpaceOnUse"><stop stop-color="#7c6af7"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs></svg>
+    <span>Mark</span>Down
+  </div>
+
+  <div class="header-group">
+    <button class="hbtn" onclick="newDoc()" title="Новый документ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Новый
+    </button>
+    <button class="hbtn" onclick="openFile()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Открыть
+    </button>
+    <button class="hbtn" onclick="saveFile()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Сохранить
+    </button>
+  </div>
+
+  <div class="header-sep"></div>
+
+  <div class="header-group">
+    <button class="hbtn" id="btn-split" onclick="setMode('split')" title="Разделённый вид">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg>
+    </button>
+    <button class="hbtn" id="btn-editor" onclick="setMode('editor')" title="Только редактор">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="14" y2="12"/></svg>
+    </button>
+    <button class="hbtn" id="btn-preview" onclick="setMode('preview')" title="Только предпросмотр">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+  </div>
+
+  <div class="header-sep"></div>
+
+  <div class="header-group">
+    <button class="hbtn" id="btn-theme" onclick="toggleTheme()" title="Тема">
+      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="hbtn" onclick="toggleFullscreen()" title="Полный экран">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    </button>
+    <button class="hbtn" onclick="showHelp()" title="Справка">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div id="filename-wrap">
+    <span id="modified-dot">●</span>
+    <span id="filename">untitled.md</span>
+  </div>
+</div>
+
+<div id="toolbar">
+  <button class="tb-btn" onclick="editor.focus();document.execCommand('undo')" title="Отменить (Ctrl+Z)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+  </button>
+  <button class="tb-btn" onclick="editor.focus();document.execCommand('redo')" title="Повторить (Ctrl+Shift+Z)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+
+  <button class="tb-btn" onclick="insertHeading(1)" title="Заголовок H1">H1</button>
+  <button class="tb-btn" onclick="insertHeading(2)" title="Заголовок H2">H2</button>
+  <button class="tb-btn" onclick="insertHeading(3)" title="Заголовок H3">H3</button>
+  <div class="tb-sep"></div>
+
+  <button class="tb-btn" onclick="wrapSelection('**','**')" title="Жирный (Ctrl+B)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+  </button>
+  <button class="tb-btn" onclick="wrapSelection('*','*')" title="Курсив (Ctrl+I)" style="font-style:italic">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+  </button>
+  <button class="tb-btn" onclick="wrapSelection('~~','~~')" title="Зачёркнутый">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><path d="M16 6c-.8-1.4-2.2-2-4-2-3 0-5 1.8-5 4 0 1 .4 2 1 2.8"/><path d="M8 18c.8 1.4 2.2 2 4 2 3 0 5-1.8 5-4 0-.7-.2-1.4-.6-2"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+
+  <button class="tb-btn" onclick="wrapSelection('\`','\`')" title="Инлайн-код (Ctrl+`)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+  </button>
+  <button class="tb-btn" onclick="insertCodeBlock()" title="Блок кода">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="2" y1="12" x2="22" y2="12" opacity="0.3"/></svg>
+    <span style="font-size:9px;opacity:0.7">BLK</span>
+  </button>
+  <div class="tb-sep"></div>
+
+  <button class="tb-btn" onclick="insertLink()" title="Ссылка (Ctrl+K)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  </button>
+  <button class="tb-btn" onclick="insertImage()" title="Изображение">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+
+  <button class="tb-btn" onclick="insertListItem('-')" title="Маркированный список">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
+  </button>
+  <button class="tb-btn" onclick="insertListItem('1.')" title="Нумерованный список">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke-linecap="round"/><path d="M4 10h2" stroke-linecap="round"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+  </button>
+  <button class="tb-btn" onclick="insertTaskItem()" title="Список задач">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+
+  <button class="tb-btn" onclick="insertBlockquote()" title="Цитата">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
+  </button>
+  <button class="tb-btn" onclick="insertHR()" title="Разделитель">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+  </button>
+  <button class="tb-btn" onclick="insertTable()" title="Таблица">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+  </button>
+</div>
+
+<div id="main">
+  <div id="editor-pane" style="width:50%">
+    <div id="editor-pane-label">Редактор</div>
+    <textarea id="editor" spellcheck="false" placeholder="# Привет, Markdown!
+
+Начни писать здесь…"></textarea>
+  </div>
+  <div id="divider"></div>
+  <div id="preview-pane">
+    <div id="preview-pane-label">Предпросмотр</div>
+    <div id="preview"></div>
+  </div>
+</div>
+
+<div id="statusbar">
+  <span>Строки: <b id="stat-lines">0</b></span>
+  <span>Слова: <b id="stat-words">0</b></span>
+  <span>Символы: <b id="stat-chars">0</b></span>
+  <span style="margin-left:auto" id="stat-pos">Стр. 1, Кол. 1</span>
+</div>
+
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div id="modal">
+    <h3 id="modal-title">Вставить ссылку</h3>
+    <div id="modal-body"></div>
+    <div class="modal-buttons" id="modal-buttons-row">
+      <button class="modal-btn" id="modal-cancel" onclick="closeModal()">Отмена</button>
+      <button class="modal-btn primary" id="modal-ok" onclick="modalOk()">Вставить</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<input type="file" id="file-input" accept=".md,.txt" style="display:none">
+
+<script>
+const editor = document.getElementById('editor');
+const preview = document.getElementById('preview');
+const modifiedDot = document.getElementById('modified-dot');
+const filenameEl = document.getElementById('filename');
+
+marked.setOptions({ breaks: true, gfm: true });
+
+const renderer = new marked.Renderer();
+renderer.code = (code, lang) => {
+  const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext';
+  const highlighted = hljs.highlight(typeof code === 'object' ? code.text : code, { language }).value;
+  const langLabel = lang || 'text';
+  return `<pre><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.5;font-size:10px;font-family:var(--font-mono);font-weight:600;letter-spacing:1px;text-transform:uppercase"><span>${langLabel}</span></div><code class="hljs language-${language}">${highlighted}</code></pre>`;
+};
+marked.use({ renderer });
+
+let currentFile = 'untitled.md';
+let isModified = false;
+let theme = 'dark';
+let viewMode = 'split';
+let modalCallback = null;
+let savedContent = '';
+let autosaveTimer = null;
+
+const LS_CONTENT  = 'mde_content';
+const LS_FILENAME = 'mde_filename';
+const LS_THEME    = 'mde_theme';
+
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem(LS_CONTENT,  editor.value);
+    localStorage.setItem(LS_FILENAME, currentFile);
+  } catch(e) {}
+}
+
+function loadFromLocalStorage() {
+  try {
+    const content  = localStorage.getItem(LS_CONTENT);
+    const filename = localStorage.getItem(LS_FILENAME);
+    if (content !== null) {
+      editor.value  = content;
+      savedContent  = content;
+      currentFile   = filename || 'untitled.md';
+      filenameEl.textContent = currentFile;
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(saveToLocalStorage, 1500);
+}
+
+function applyTheme(t) {
+  theme = t;
+  document.body.classList.toggle('light', theme === 'light');
+  const icon = document.getElementById('theme-icon');
+  if (theme === 'light') {
+    icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    document.getElementById('hljs-theme').href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css';
+  } else {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    document.getElementById('hljs-theme').href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css';
+  }
+  try { localStorage.setItem(LS_THEME, theme); } catch(e) {}
+}
+
+function toggleTheme() {
+  applyTheme(theme === 'dark' ? 'light' : 'dark');
+  renderPreview();
+}
+
+function renderPreview() {
+  preview.innerHTML = marked.parse(editor.value);
+  preview.querySelectorAll('input[type=checkbox]').forEach(cb => cb.disabled = false);
+}
+
+function updateStats() {
+  const val = editor.value;
+  document.getElementById('stat-lines').textContent = val.split('\n').length;
+  document.getElementById('stat-words').textContent = val.trim() ? val.trim().split(/\s+/).length : 0;
+  document.getElementById('stat-chars').textContent = val.length;
+}
+
+function updateCursor() {
+  const val = editor.value.substring(0, editor.selectionStart);
+  const lines = val.split('\n');
+  document.getElementById('stat-pos').textContent = `Стр. ${lines.length}, Кол. ${lines[lines.length-1].length+1}`;
+}
+
+const SAMPLE = `# Добро пожаловать в MarkDown Editor ✨
+
+Это **полнофункциональный** редактор Markdown с живым предпросмотром.
+
+## Возможности
+
+- ✅ Разделённый экран с перетаскиваемым разделителем
+- ✅ Панель инструментов с 20+ кнопками
+- ✅ Горячие клавиши \`Ctrl+B\`, \`Ctrl+I\`, \`Ctrl+K\`
+- ✅ Тёмная и светлая темы
+- ✅ Открытие и сохранение файлов
+
+## Пример кода
+
+\`\`\`javascript
+function hello(name) {
+  return \`Привет, \${name}!\`;
+}
+
+console.log(hello('Мир'));
+\`\`\`
+
+## Таблица
+
+| Функция | Статус | Описание |
+|---------|--------|----------|
+| Редактор | ✅ | Моноширинный шрифт |
+| Предпросмотр | ✅ | GFM совместимый |
+| Темы | ✅ | Светлая / Тёмная |
+
+## Цитата
+
+> Markdown — это простой и красивый способ форматировать текст.
+
+---
+
+Начни редактировать прямо сейчас!
+`;
+
+try {
+  const savedTheme = localStorage.getItem(LS_THEME);
+  if (savedTheme) applyTheme(savedTheme);
+} catch(e) {}
+
+const restored = loadFromLocalStorage();
+if (!restored) {
+  editor.value = SAMPLE;
+  savedContent  = SAMPLE;
+  saveToLocalStorage();
+} else {
+  // ----
+}
+
+renderPreview();
+updateStats();
+
+editor.addEventListener('input', () => {
+  renderPreview();
+  updateStats();
+  isModified = true;
+  modifiedDot.style.display = 'block';
+  scheduleAutosave();
+});
+
+editor.addEventListener('keyup', updateCursor);
+editor.addEventListener('click', updateCursor);
+
+editor.addEventListener('keydown', e => {
+  if (e.key === 'Tab') { e.preventDefault(); insertAtCursor('  '); }
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'b') { e.preventDefault(); wrapSelection('**','**'); }
+    if (e.key === 'i') { e.preventDefault(); wrapSelection('*','*'); }
+    if (e.key === 'k') { e.preventDefault(); insertLink(); }
+    if (e.key === '`') { e.preventDefault(); wrapSelection('`','`'); }
+    if (e.key === 's' && !e.shiftKey) { e.preventDefault(); saveFile(); }
+    if (e.key === 'z') { setTimeout(() => { renderPreview(); updateStats(); }, 0); }
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.body.classList.contains('fullscreen')) {
+    document.body.classList.remove('fullscreen');
+  }
+});
+
+function insertAtCursor(text) {
+  const s = editor.selectionStart, e2 = editor.selectionEnd;
+  editor.value = editor.value.substring(0,s) + text + editor.value.substring(e2);
+  editor.selectionStart = editor.selectionEnd = s + text.length;
+  editor.focus(); renderPreview(); updateStats(); markModified();
+}
+
+function wrapSelection(before, after) {
+  const s = editor.selectionStart, e2 = editor.selectionEnd;
+  const sel = editor.value.substring(s, e2) || 'текст';
+  editor.value = editor.value.substring(0,s) + before + sel + after + editor.value.substring(e2);
+  editor.selectionStart = s + before.length;
+  editor.selectionEnd   = s + before.length + sel.length;
+  editor.focus(); renderPreview(); updateStats(); markModified();
+}
+
+function insertLinePrefix(prefix) {
+  const s = editor.selectionStart;
+  const lineStart = editor.value.lastIndexOf('\n', s-1) + 1;
+  editor.value = editor.value.substring(0,lineStart) + prefix + editor.value.substring(lineStart);
+  editor.selectionStart = editor.selectionEnd = s + prefix.length;
+  editor.focus(); renderPreview(); updateStats(); markModified();
+}
+
+function insertBlock(text) {
+  const s = editor.selectionStart;
+  const val = editor.value;
+  const before = val.substring(0,s), after = val.substring(s);
+  const pre  = (before.length && !before.endsWith('\n')) ? '\n\n' : (before.length ? '\n' : '');
+  const post = after.startsWith('\n') ? '' : '\n';
+  editor.value = before + pre + text + post + after;
+  editor.selectionStart = editor.selectionEnd = s + pre.length + text.length;
+  editor.focus(); renderPreview(); updateStats(); markModified();
+}
+
+function markModified() {
+  isModified = true;
+  modifiedDot.style.display = 'block';
+  scheduleAutosave();
+}
+
+function insertHeading(level)  { insertLinePrefix('#'.repeat(level) + ' '); }
+function insertCodeBlock()     { const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd); insertBlock('```javascript\n' + (sel||'код здесь') + '\n```'); }
+function insertListItem(m)     { insertBlock(`${m} Пункт списка`); }
+function insertTaskItem()      { insertBlock(`- [ ] Задача`); }
+function insertBlockquote()    { insertBlock(`> Цитата`); }
+function insertHR()            { insertBlock('---'); }
+function insertTable()         { insertBlock(`| Столбец 1 | Столбец 2 | Столбец 3 |\n|-----------|-----------|----------|\n| Ячейка    | Ячейка    | Ячейка   |\n| Ячейка    | Ячейка    | Ячейка   |`); }
+
+function insertLink() {
+  const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+  openModal('Вставить ссылку', `
+    <label>Текст</label><input id="m-text" value="${sel||'Текст ссылки'}" placeholder="Текст ссылки">
+    <label>URL</label><input id="m-url" value="https://" placeholder="https://example.com">
+  `, () => insertBlock(`[${document.getElementById('m-text').value}](${document.getElementById('m-url').value})`));
+  setTimeout(() => document.getElementById('m-url').focus(), 50);
+}
+
+function insertImage() {
+  openModal('Вставить изображение', `
+    <label>Альтернативный текст</label><input id="m-alt" value="изображение" placeholder="Описание изображения">
+    <label>URL изображения</label><input id="m-src" value="https://" placeholder="https://example.com/image.png">
+  `, () => insertBlock(`![${document.getElementById('m-alt').value}](${document.getElementById('m-src').value})`));
+}
+
+const divider   = document.getElementById('divider');
+const editorPane = document.getElementById('editor-pane');
+const mainEl    = document.getElementById('main');
+let dragging = false, dragStartX = 0, startW = 0;
+
+divider.addEventListener('mousedown', e => {
+  dragging = true; dragStartX = e.clientX;
+  startW = editorPane.getBoundingClientRect().width;
+  divider.classList.add('dragging');
+  document.body.style.cssText += ';cursor:col-resize;user-select:none';
+});
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const totalW = mainEl.getBoundingClientRect().width;
+  const newW   = Math.max(150, Math.min(totalW-155, startW + e.clientX - dragStartX));
+  editorPane.style.width = newW + 'px';
+  editorPane.style.flex  = 'none';
+});
+document.addEventListener('mouseup', () => {
+  if (!dragging) return;
+  dragging = false;
+  divider.classList.remove('dragging');
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+});
+
+function newDoc() {
+  if (isModified && !confirm('Несохранённые изменения. Продолжить?')) return;
+  editor.value = ''; savedContent = '';
+  currentFile  = 'untitled.md'; filenameEl.textContent = currentFile;
+  isModified   = false; modifiedDot.style.display = 'none';
+  saveToLocalStorage(); renderPreview(); updateStats();
+  showToast('Новый документ создан');
+}
+
+function openFile() { document.getElementById('file-input').click(); }
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    editor.value  = ev.target.result;
+    savedContent  = ev.target.result;
+    currentFile   = file.name; filenameEl.textContent = currentFile;
+    isModified    = false; modifiedDot.style.display = 'none';
+    saveToLocalStorage(); renderPreview(); updateStats();
+    showToast('Файл открыт: ' + file.name);
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function saveFile() {
+  openModal('Сохранить файл', `
+    <label>Имя файла</label>
+    <input id="m-fname" value="${currentFile}" placeholder="untitled.md" spellcheck="false">
+    <div style="font-size:11px;color:var(--text3);margin-top:-4px">Расширение .md добавится автоматически</div>
+  `, () => {
+    let name = document.getElementById('m-fname').value.trim() || 'untitled';
+    if (!name.endsWith('.md')) name += '.md';
+    doSave(name);
+  }, 'Сохранить');
+  setTimeout(() => {
+    const inp = document.getElementById('m-fname');
+    if (inp) {
+      inp.focus();
+      const dotIdx = inp.value.lastIndexOf('.');
+      inp.setSelectionRange(0, dotIdx > 0 ? dotIdx : inp.value.length);
+    }
+  }, 60);
+}
+
+function doSave(filename) {
+  const blob = new Blob([editor.value], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  URL.revokeObjectURL(a.href);
+  savedContent = editor.value; currentFile = filename;
+  filenameEl.textContent = currentFile;
+  isModified = false; modifiedDot.style.display = 'none';
+  saveToLocalStorage();
+  showToast('Сохранено: ' + filename);
+}
+
+function setMode(mode) {
+  viewMode = mode;
+  document.body.classList.remove('only-editor','only-preview');
+  if (mode === 'editor')  document.body.classList.add('only-editor');
+  if (mode === 'preview') document.body.classList.add('only-preview');
+  ['split','editor','preview'].forEach(m =>
+    document.getElementById('btn-'+m).classList.toggle('active', m === mode)
+  );
+  if (mode === 'split') { editorPane.style.width = '50%'; editorPane.style.flex = 'none'; }
+}
+setMode('split');
+
+function toggleFullscreen() { document.body.classList.toggle('fullscreen'); }
+
+function openModal(title, bodyHTML, ok, okLabel = 'Вставить', helpMode = false) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-ok').textContent = okLabel;
+  document.getElementById('modal-cancel').style.display = helpMode ? 'none' : '';
+  document.getElementById('modal-ok').textContent = helpMode ? 'Закрыть' : okLabel;
+  const modal = document.getElementById('modal');
+  if (helpMode) { modal.classList.add('help-modal'); }
+  else { modal.classList.remove('help-modal'); }
+  modalCallback = ok;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('modal-body').querySelectorAll('input').forEach((inp, i) => {
+    if (i === 0) setTimeout(() => inp.focus(), 50);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') modalOk(); });
+  });
+}
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal').classList.remove('help-modal');
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function modalOk() {
+  document.getElementById('modal').classList.remove('help-modal');
+  document.getElementById('modal-overlay').classList.remove('open');
+  if (modalCallback) { modalCallback(); modalCallback = null; }
+}
+
+function showHelp() {
+  openModal('Справка', `
+    <div class="help-about">
+      <div class="help-about-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="3"/><path d="M7 12l3 3 7-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="help-about-text">
+        <strong>MarkDown Editor</strong>
+        Редактор Markdown-файлов с живым предпросмотром. Поддерживает GFM (GitHub Flavored Markdown): таблицы, чекбоксы, зачёркнутый текст, подсветку синтаксиса кода.
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h4>⌨️ Горячие клавиши</h4>
+      <div class="help-grid">
+        <div class="help-row"><span class="hkey"><kbd>Ctrl</kbd><kbd>B</kbd></span><span class="hdesc">Жирный текст</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Ctrl</kbd><kbd>I</kbd></span><span class="hdesc">Курсив</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Ctrl</kbd><kbd>K</kbd></span><span class="hdesc">Вставить ссылку</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Ctrl</kbd><kbd>\`</kbd></span><span class="hdesc">Инлайн-код</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Ctrl</kbd><kbd>S</kbd></span><span class="hdesc">Сохранить файл</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Ctrl</kbd><kbd>Z</kbd></span><span class="hdesc">Отменить действие</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Z</kbd></span><span class="hdesc">Повторить действие</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Tab</kbd></span><span class="hdesc">Отступ (2 пробела)</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Esc</kbd></span><span class="hdesc">Выйти из полного экрана</span></div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h4>🔧 Панель инструментов</h4>
+      <div class="help-grid">
+        <div class="help-row"><span class="hkey"><kbd>H1</kbd><kbd>H2</kbd><kbd>H3</kbd></span><span class="hdesc">Заголовки</span></div>
+        <div class="help-row"><span class="hkey"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg></span><span class="hdesc">Жирный, Курсив, Зачёркнутый</span></div>
+        <div class="help-row"><span class="hkey"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span><span class="hdesc">Инлайн-код и блок кода</span></div>
+        <div class="help-row"><span class="hkey"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><span class="hdesc">Ссылка и изображение</span></div>
+        <div class="help-row"><span class="hkey"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg></span><span class="hdesc">Маркированный список</span></div>
+        <div class="help-row"><span class="hkey"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="hdesc">Нумерованный список и задачи</span></div>
+        <div class="help-row"><span class="hkey"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="12" y1="3" x2="12" y2="21"/></svg></span><span class="hdesc">Цитата, разделитель, таблица</span></div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h4>💾 Работа с файлами</h4>
+      <div class="help-grid">
+        <div class="help-row"><span class="hkey"><kbd>Новый</kbd></span><span class="hdesc">Создать чистый документ</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Открыть</kbd></span><span class="hdesc">Загрузить .md или .txt файл</span></div>
+        <div class="help-row"><span class="hkey"><kbd>Сохранить</kbd></span><span class="hdesc">Скачать файл на диск</span></div>
+        <div class="help-row"><span class="hkey"><kbd>●</kbd></span><span class="hdesc">Индикатор несохранённых изменений</span></div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h4>🎨 Интерфейс</h4>
+      <div class="help-grid">
+        <div class="help-row"><span class="hkey"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg></span><span class="hdesc">Разделённый вид</span></div>
+        <div class="help-row"><span class="hkey"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="hdesc">Только предпросмотр</span></div>
+        <div class="help-row"><span class="hdesc" style="color:var(--text2)">Разделитель между панелями можно перетаскивать мышью для изменения ширины</span></div>
+        <div class="help-row"><span class="hdesc" style="color:var(--text2)">Прогресс автоматически сохраняется в памяти браузера каждые 1.5 сек</span></div>
+      </div>
+    </div>
+
+    <div class="help-section" style="margin-bottom:0">
+      <h4>📝 Синтаксис Markdown</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+        <span class="help-tag"># Заголовок</span>
+        <span class="help-tag">**жирный**</span>
+        <span class="help-tag">*курсив*</span>
+        <span class="help-tag">~~зачёркнутый~~</span>
+        <span class="help-tag">\`код\`</span>
+        <span class="help-tag">[текст](url)</span>
+        <span class="help-tag">![alt](url)</span>
+        <span class="help-tag">- список</span>
+        <span class="help-tag">1. нумерованный</span>
+        <span class="help-tag">- [ ] задача</span>
+        <span class="help-tag">> цитата</span>
+        <span class="help-tag">---</span>
+        <span class="help-tag">\`\`\`js блок\`\`\`</span>
+        <span class="help-tag">| таблица |</span>
+      </div>
+    </div>
+  `, null, 'Закрыть', true);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+editor.focus();
+editor.setSelectionRange(0,0);
+updateCursor();
+</script>
+</body>
+</html>
